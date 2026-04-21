@@ -302,99 +302,7 @@ bool SudokuSolver(Solver &s)
     return s.check_solved();
 }
 
-/*
-    ------------------------
-            Terminal
-    ------------------------
-*/
 
-// user input board hash into solver -> places digits
-void SetupStartingBoard(Solver &s, string BoardHash)
-{
-    int pos = 0;
-    int digit = 0;
-    char prev_c = '#';
-    for (char c : BoardHash)
-    {
-        if (c == '.')
-        {
-            pos += 3;
-            continue;
-        }
-        if (c == '+')
-        {
-            pos += 2;
-            continue;
-        }
-        if (c == '-')
-        {
-            pos++;
-            prev_c = '-';
-            continue;
-        }
-        digit = c - '0';
-        if (digit != 0)
-        {
-            s.place_Z_digit(pos, digit);
-        }
-
-        if (prev_c == '-')
-        {
-            pos++;
-            prev_c = '#';
-        }
-
-        pos++;
-    }
-}
-
-// prints board, style = ['Z','C']
-void print_board(const Solver &s, char style)
-{
-
-    if (style == 'Z')
-    {
-
-        for (int i = 0; i < 81; i++)
-        {
-
-            i % 3 == 0 ? cout << "  " : cout << ' ';
-            if (i % 9 == 0)
-            {
-                cout << newl;
-            }
-            if (i % 27 == 0)
-            {
-                cout << newl;
-            }
-            s.board[i].print_Z_digit();
-        }
-    }
-
-    if (style == 'C')
-    {
-        int unfilled = 0;
-        for (int pos = 0; pos < 81; pos++)
-        {
-            if (s.board[pos].is_solved())
-                continue;
-
-            unfilled++;
-            int row = s.board[pos].row_index + 1;
-            int col = s.board[pos].col_index + 1;
-            cout << "pos " << pos << " (" << row << " , " << col << ") : ";
-
-            // get digits from candidate cells to print
-            for (int val = 1; val <= 9; val++)
-            {
-                if (s.board[pos].has_C_digit(val))
-                    cout << val << ' ';
-            }
-            cout << newl;
-        }
-        cout << "\nFilled Cells: " << s.filled << "\nUnfilled Cells: " << unfilled << newl;
-    }
-}
 
 /*
     ---------------------------------
@@ -633,136 +541,95 @@ int Solver::find_all_naked_pairs()
 }
 
 /*
-    ------------------------------
-        RECURSIVE BACKTRACKING
-    ------------------------------
+    ------------------------
+            Terminal
+    ------------------------
 */
 
-int Solver::recursive_backtrack_solve()
+// user input board hash into solver -> places digits
+void SetupStartingBoard(Solver &s, string BoardHash)
 {
-
-    vector<int> remaining_pos = remaining_pos_to_fill();
-    int remaining_num = remaining_pos.size();
-    map<int, int> pos_dig = {};
-    for (int i = 0; i < remaining_num; i++)
+    int pos = 0;
+    int digit = 0;
+    char prev_c = '#';
+    for (char c : BoardHash)
     {
-    }
-
-    return 0;
-}
-
-vector<int> Solver::remaining_pos_to_fill()
-{
-    int n = 0; // number of unoslved cells
-    vector<int> pos_to_fill = {};
-    for (int pos = 0; pos < 81; pos++)
-    {
-        if (!board[pos].is_solved())
-            pos_to_fill.push_back(pos);
-    }
-    return pos_to_fill;
-}
-
-bool Solver::has_contradiction() const
-{
-    for (int pos = 0; pos < 81; pos++)
-    {
-        if (board[pos].is_solved())
-            continue;
-
-        if (board[pos].C_digits == 0)
+        if (c == '.')
         {
-            cout << "has_contradiction!\nPos " << pos << " : " << board[pos].C_digits << newl;
-            return true;
+            pos += 3;
+            continue;
         }
-    }
-    return false;
-}
-
-int Solver::find_best_guess_cell()
-{
-    // might change this to find candidates that appear least number of times in grid
-    // need to play about with this
-
-    int best_pos = -1;
-    int best_count = 10;
-
-    for (int pos = 0; pos < 81; pos++)
-    {
-        if (board[pos].is_solved())
-            continue;
-        if (board[pos].count_C_digits() < best_count)
+        if (c == '+')
         {
-            best_count = board[pos].count_C_digits();
-            best_pos = pos;
+            pos += 2;
+            continue;
         }
-        if (best_count == 2)
-            break;
+        if (c == '-')
+        {
+            pos++;
+            prev_c = '-';
+            continue;
+        }
+        digit = c - '0';
+        if (digit != 0)
+        {
+            s.place_Z_digit(pos, digit);
+        }
+
+        if (prev_c == '-')
+        {
+            pos++;
+            prev_c = '#';
+        }
+
+        pos++;
     }
-    return best_pos;
 }
 
-bool iterative_solve(Solver &s)
+// prints board, style = ['Z','C']
+void print_board(const Solver &s, char style)
 {
-    SudokuSolver(s);
-    if (s.has_contradiction())
-    {
-        cout << "s.has_contradiction returned true" << newl;
-        return false;
-    }
-    if (s.check_solved())
-    {
-        cout << "s.check_solved returned true" << newl;
-        return true;
-    }
 
-    // int pos = s.find_best_guess_cell();
-    // if (pos == -1)
-    // {
-    //     cout << "find_best_guess_cell returned -1" << newl;
-    //     return false;
-    // }
-
-    for (int pos = 0; pos < 81; pos++)
+    if (style == 'Z')
     {
-        if (s.board[pos].is_solved())
-            continue;
 
-        vector<int> candidates = get_set_bits(s.board[pos].C_digits);
-        for (int digit : candidates)
+        for (int i = 0; i < 81; i++)
         {
-            cout << "testing position " << pos << "\ncandidates : ";
-            for (int d : candidates)
-                cout << d << ", ";
-            cout << newl << "testing digit: " << digit;
 
-            Solver backup = s;
-            backup.place_Z_digit(pos, digit);
-
-            if (iterative_solve(backup))
+            i % 3 == 0 ? cout << "  " : cout << ' ';
+            if (i % 9 == 0)
             {
-                s = backup;
-                return true;
+                cout << newl;
             }
+            if (i % 27 == 0)
+            {
+                cout << newl;
+            }
+            s.board[i].print_Z_digit();
         }
     }
-    return false;
-}
 
-vector<int> count_unsolved_candidates(Solver &s)
-{
-    vector<int> res = {0,0,0,0,0,0,0,0,0};
-    for (int pos = 0; pos < 81; pos++)
+    if (style == 'C')
     {
-        if (s.board[pos].is_solved())
-            continue;
-
-        vector<int> digs = get_set_bits(s.board[pos].C_digits);
-
-        for (int d : digs)
+        int unfilled = 0;
+        for (int pos = 0; pos < 81; pos++)
         {
-            res.at(d - 1)++;
-        } 
+            if (s.board[pos].is_solved())
+                continue;
+
+            unfilled++;
+            int row = s.board[pos].row_index + 1;
+            int col = s.board[pos].col_index + 1;
+            cout << "pos " << pos << " (" << row << " , " << col << ") : ";
+
+            // get digits from candidate cells to print
+            for (int val = 1; val <= 9; val++)
+            {
+                if (s.board[pos].has_C_digit(val))
+                    cout << val << ' ';
+            }
+            cout << newl;
+        }
+        cout << "\nFilled Cells: " << s.filled << "\nUnfilled Cells: " << unfilled << newl;
     }
-    return res;
 }
